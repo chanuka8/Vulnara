@@ -12,3 +12,7 @@ class ScopeValidationError(VulnaraError):
 
 class ScanProfileError(VulnaraError):
     """Raised when a requested scan profile is unavailable or invalid."""
+
+
+class ScanExecutionError(VulnaraError):
+    """Raised when a scan workflow step cannot be completed."""

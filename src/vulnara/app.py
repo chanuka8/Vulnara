@@ -8,15 +8,10 @@ from rich.table import Table
 from rich.text import Text
 
 from vulnara.core.config_loader import ConfigLoader
-from vulnara.core.evidence import EvidenceStore
-from vulnara.core.exceptions import ScopeValidationError, VulnaraError
+from vulnara.core.exceptions import VulnaraError
 from vulnara.core.logger import ConsoleLogger
-from vulnara.core.scope import ScopeValidator
-from vulnara.findings.rules import FindingRuleEngine
+from vulnara.core.orchestrator import ScanOrchestrator
 from vulnara.models.finding import Finding
-from vulnara.modules.recon.headers import HeaderScanner
-from vulnara.modules.recon.http_probe import HttpProbe
-from vulnara.reports.generator import ReportGenerator
 
 app = typer.Typer(
     name="vulnara",
@@ -53,17 +48,6 @@ def print_banner() -> None:
             padding=(1, 4),
         )
     )
-
-
-def resolve_project_path(project_root: Path, path_value: str) -> Path:
-    """Resolve relative project paths from configuration."""
-
-    path = Path(path_value)
-
-    if path.is_absolute():
-        return path
-
-    return project_root / path
 
 
 def print_findings_table(findings: list[Finding]) -> None:
@@ -161,115 +145,58 @@ def scan(
     else:
         logger.info("AI analysis: [bold yellow]disabled[/bold yellow]")
 
-    try:
-        target_info = ScopeValidator().validate_target(
-            target_url=target,
-            authorized_domain=authorized_domain,
-        )
-    except ScopeValidationError as error:
-        logger.error(str(error))
-        raise typer.Exit(code=1) from error
-
-    logger.success("Scope validation passed.")
-    logger.info(f"Validated hostname: [bold white]{target_info.hostname}[/bold white]")
-    logger.info(f"Base URL: [bold white]{target_info.base_url}[/bold white]")
-
     project_root = Path.cwd()
     config_loader = ConfigLoader(project_root=project_root)
 
     try:
         settings = config_loader.load_settings()
+        scan_profiles = config_loader.load_scan_profiles()
+
+        logger.info("Running orchestrated assessment workflow.")
+        result = ScanOrchestrator(
+            project_root=project_root,
+            settings=settings,
+            scan_profiles=scan_profiles,
+        ).run(
+            target_url=target,
+            authorized_domain=authorized_domain,
+            profile_name=profile,
+        )
     except VulnaraError as error:
         logger.error(str(error))
         raise typer.Exit(code=1) from error
 
-    network_settings: dict[str, Any] = settings.get("network", {})
-    timeout_seconds = int(network_settings.get("timeout_seconds", 10))
-    follow_redirects = bool(network_settings.get("follow_redirects", True))
-    user_agent = str(network_settings.get("user_agent", "Vulnara/0.1"))
-
-    logger.info("Running HTTP probe.")
-    http_result = HttpProbe(
-        timeout_seconds=timeout_seconds,
-        follow_redirects=follow_redirects,
-        user_agent=user_agent,
-    ).run(target_info)
-
-    if not http_result.get("success"):
-        logger.error(f"HTTP probe failed: {http_result.get('error', 'unknown error')}")
-        raise typer.Exit(code=1)
+    logger.success("Scan workflow completed.")
+    logger.success("Scope validation passed.")
+    logger.info(f"Validated hostname: [bold white]{result.target.hostname}[/bold white]")
+    logger.info(f"Base URL: [bold white]{result.target.base_url}[/bold white]")
 
     logger.success("HTTP probe completed.")
-    logger.info(f"Final URL: [bold white]{http_result.get('url', '')}[/bold white]")
+    logger.info(f"Final URL: [bold white]{result.http_result.get('url', '')}[/bold white]")
     logger.info(
-        f"Status: [bold white]{http_result.get('status_code', '')} "
-        f"{http_result.get('reason_phrase', '')}[/bold white]"
+        f"Status: [bold white]{result.http_result.get('status_code', '')} "
+        f"{result.http_result.get('reason_phrase', '')}[/bold white]"
     )
 
-    page_title = str(http_result.get("title", "")).strip()
+    page_title = str(result.http_result.get("title", "")).strip()
     if page_title:
         logger.info(f"Page title: [bold white]{page_title}[/bold white]")
 
-    logger.info("Running security header analysis.")
-    header_result = HeaderScanner().run(http_result)
-
-    missing_headers = header_result.get("missing_headers", [])
+    missing_headers = result.header_result.get("missing_headers", [])
     if isinstance(missing_headers, list) and missing_headers:
         logger.warning(f"Missing security headers: {', '.join(missing_headers)}")
     else:
         logger.success("No missing security headers detected by the current rule set.")
 
-    server_header = str(header_result.get("server_header", "")).strip()
+    server_header = str(result.header_result.get("server_header", "")).strip()
     if server_header:
         logger.info(f"Server header: [bold white]{server_header}[/bold white]")
 
-    raw_results = {
-        "http_probe": http_result,
-        "headers": header_result,
-    }
+    logger.success(f"Findings generated: {result.finding_count}")
+    print_findings_table(result.findings)
 
-    logger.info("Generating findings.")
-    findings = FindingRuleEngine().build_findings(
-        target=target_info,
-        raw_results=raw_results,
-    )
-
-    logger.success(f"Findings generated: {len(findings)}")
-    print_findings_table(findings)
-
-    storage_settings: dict[str, Any] = settings.get("storage", {})
-    evidence_dir = str(storage_settings.get("evidence_dir", "storage/evidence"))
-    reports_dir = str(storage_settings.get("reports_dir", "output/reports"))
-
-    evidence_root = resolve_project_path(project_root, evidence_dir)
-    reports_root = resolve_project_path(project_root, reports_dir)
-    template_path = project_root / "src" / "vulnara" / "reports" / "templates" / "report.html"
-
-    logger.info("Saving evidence.")
-    evidence_path = EvidenceStore(evidence_root=evidence_root).save_scan_evidence(
-        target=target_info,
-        http_result=http_result,
-        header_result=header_result,
-        findings=findings,
-    )
-
-    logger.success(f"Evidence saved: {evidence_path}")
-
-    logger.info("Generating HTML report.")
-    report_path = ReportGenerator(
-        reports_root=reports_root,
-        template_path=template_path,
-    ).generate_html_report(
-        target=target_info,
-        http_result=http_result,
-        header_result=header_result,
-        findings=findings,
-        evidence_path=evidence_path,
-        scan_id=evidence_path.name,
-    )
-
-    logger.success(f"Report saved: {report_path}")
-    logger.success("Report generation completed.")
+    logger.success(f"Evidence saved: {result.evidence_path}")
+    logger.success(f"Report saved: {result.report_path}")
 
 
 @app.command()

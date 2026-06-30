@@ -1,4 +1,4 @@
-import json
+﻿import json
 from pathlib import Path
 from typing import Any
 
@@ -27,10 +27,12 @@ class EvidenceStore:
         header_result: dict[str, Any],
         findings: list[Finding],
         passive_results: dict[str, Any] | None = None,
+        cookie_result: dict[str, Any] | None = None,
         scan_id: str | None = None,
     ) -> Path:
         scan_directory = self.create_scan_directory(target=target, scan_id=scan_id)
         resolved_passive_results = passive_results or {}
+        resolved_cookie_result = cookie_result or {}
 
         target_payload = {
             "original_url": target.original_url,
@@ -47,6 +49,7 @@ class EvidenceStore:
             "target.json",
             "http_probe.json",
             "headers.json",
+            "cookies.json",
             "findings.json",
             "summary.json",
         ]
@@ -54,6 +57,7 @@ class EvidenceStore:
         self._write_json(scan_directory / "target.json", target_payload)
         self._write_json(scan_directory / "http_probe.json", http_result)
         self._write_json(scan_directory / "headers.json", header_result)
+        self._write_json(scan_directory / "cookies.json", resolved_cookie_result)
         self._write_json(scan_directory / "findings.json", finding_payload)
 
         for module_name, payload in resolved_passive_results.items():
@@ -70,6 +74,10 @@ class EvidenceStore:
             "finding_count": len(findings),
             "severity_counts": self._count_findings_by_severity(findings),
             "passive_modules": sorted(resolved_passive_results.keys()),
+            "cookie_count": int(resolved_cookie_result.get("cookie_count", 0)),
+            "cookies_with_missing_attributes": len(
+                resolved_cookie_result.get("cookies_with_missing_attributes", [])
+            ),
             "saved_at": utc_iso_timestamp(),
             "evidence_files": evidence_files,
         }

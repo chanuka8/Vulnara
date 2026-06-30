@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+﻿from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +17,7 @@ class ScanResult:
     evidence_path: Path
     report_path: Path
     passive_results: dict[str, Any] = field(default_factory=dict)
+    cookie_result: dict[str, Any] = field(default_factory=dict)
 
     @property
     def finding_count(self) -> int:
@@ -34,6 +35,7 @@ class ScanResult:
             "http_result": self.http_result,
             "header_result": self.header_result,
             "passive_results": self.passive_results,
+            "cookie_result": self.cookie_result,
             "findings": [finding.to_dict() for finding in self.findings],
             "evidence_path": str(self.evidence_path),
             "report_path": str(self.report_path),

@@ -1,0 +1,22 @@
+﻿profiles:
+  passive_recon:
+    description: "Passive reconnaissance and safe metadata checks."
+    http_probe: true
+    headers: true
+    robots: true
+    sitemap: true
+    dns_lookup: false
+    tls_check: false
+    nmap_safe: false
+    ai_summary: false
+
+  headers_only:
+    description: "HTTP probe and security header analysis only."
+    http_probe: true
+    headers: true
+    robots: false
+    sitemap: false
+    dns_lookup: false
+    tls_check: false
+    nmap_safe: false
+    ai_summary: false

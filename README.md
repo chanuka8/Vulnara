@@ -1,4 +1,4 @@
-﻿# Vulnara
+# Vulnara
 
 Vulnara is a local-first terminal security assessment automation tool for authorized testing environments.
 
@@ -28,17 +28,41 @@ Vulnara does not perform:
 
 ## Installation
 
-1. Create a virtual environment.
-2. Activate the virtual environment.
-3. Install requirements.
-4. Run the doctor command.
+### Quick Start (Recommended)
 
-PowerShell commands:
+**Windows (PowerShell):**
 
+```powershell
+git clone https://github.com/chanuka8/Vulnara.git
+cd Vulnara
+.\scripts\install.ps1
+```
+
+**Kali Linux / Debian / Ubuntu:**
+
+```bash
+git clone https://github.com/chanuka8/Vulnara.git
+cd Vulnara
+chmod +x scripts/install.sh
+./scripts/install.sh
+```
+
+The installer presents three options: Basic, Recommended, and Advanced. See [docs/installer.md](docs/installer.md) for details.
+
+### Manual Installation
+
+```bash
 python -m venv venv
+
+# Windows
 venv\Scripts\activate
+
+# Linux/macOS
+source venv/bin/activate
+
 pip install -r requirements.txt
 python main.py doctor
+```
 
 ## Python Support
 

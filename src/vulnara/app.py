@@ -8,6 +8,7 @@ from rich.table import Table
 from rich.text import Text
 
 from vulnara.core.config_loader import ConfigLoader
+from vulnara.core.evidence import EvidenceStore
 from vulnara.core.exceptions import ScopeValidationError, VulnaraError
 from vulnara.core.logger import ConsoleLogger
 from vulnara.core.scope import ScopeValidator
@@ -51,6 +52,17 @@ def print_banner() -> None:
             padding=(1, 4),
         )
     )
+
+
+def resolve_project_path(project_root: Path, path_value: str) -> Path:
+    """Resolve relative project paths from configuration."""
+
+    path = Path(path_value)
+
+    if path.is_absolute():
+        return path
+
+    return project_root / path
 
 
 def print_findings_table(findings: list[Finding]) -> None:
@@ -224,7 +236,20 @@ def scan(
     logger.success(f"Findings generated: {len(findings)}")
     print_findings_table(findings)
 
-    logger.success("Findings engine completed. Evidence storage will be connected in Milestone 5.")
+    storage_settings: dict[str, Any] = settings.get("storage", {})
+    evidence_dir = str(storage_settings.get("evidence_dir", "storage/evidence"))
+    evidence_root = resolve_project_path(project_root, evidence_dir)
+
+    logger.info("Saving evidence.")
+    evidence_path = EvidenceStore(evidence_root=evidence_root).save_scan_evidence(
+        target=target_info,
+        http_result=http_result,
+        header_result=header_result,
+        findings=findings,
+    )
+
+    logger.success(f"Evidence saved: {evidence_path}")
+    logger.success("Evidence storage completed. Report generation will be connected in Milestone 6.")
 
 
 @app.command()

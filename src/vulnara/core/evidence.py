@@ -26,9 +26,11 @@ class EvidenceStore:
         http_result: dict[str, Any],
         header_result: dict[str, Any],
         findings: list[Finding],
+        passive_results: dict[str, Any] | None = None,
         scan_id: str | None = None,
     ) -> Path:
         scan_directory = self.create_scan_directory(target=target, scan_id=scan_id)
+        resolved_passive_results = passive_results or {}
 
         target_payload = {
             "original_url": target.original_url,
@@ -41,6 +43,24 @@ class EvidenceStore:
 
         finding_payload = [finding.to_dict() for finding in findings]
 
+        evidence_files = [
+            "target.json",
+            "http_probe.json",
+            "headers.json",
+            "findings.json",
+            "summary.json",
+        ]
+
+        self._write_json(scan_directory / "target.json", target_payload)
+        self._write_json(scan_directory / "http_probe.json", http_result)
+        self._write_json(scan_directory / "headers.json", header_result)
+        self._write_json(scan_directory / "findings.json", finding_payload)
+
+        for module_name, payload in resolved_passive_results.items():
+            file_name = f"{safe_path_name(module_name)}.json"
+            evidence_files.append(file_name)
+            self._write_json(scan_directory / file_name, payload)
+
         summary_payload = {
             "target": {
                 "hostname": target.hostname,
@@ -49,20 +69,11 @@ class EvidenceStore:
             },
             "finding_count": len(findings),
             "severity_counts": self._count_findings_by_severity(findings),
+            "passive_modules": sorted(resolved_passive_results.keys()),
             "saved_at": utc_iso_timestamp(),
-            "evidence_files": [
-                "target.json",
-                "http_probe.json",
-                "headers.json",
-                "findings.json",
-                "summary.json",
-            ],
+            "evidence_files": evidence_files,
         }
 
-        self._write_json(scan_directory / "target.json", target_payload)
-        self._write_json(scan_directory / "http_probe.json", http_result)
-        self._write_json(scan_directory / "headers.json", header_result)
-        self._write_json(scan_directory / "findings.json", finding_payload)
         self._write_json(scan_directory / "summary.json", summary_payload)
 
         return scan_directory

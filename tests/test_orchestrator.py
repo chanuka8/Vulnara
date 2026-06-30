@@ -69,3 +69,20 @@ def test_orchestrator_builds_skipped_header_result(tmp_path) -> None:
     assert result["missing_headers"] == []
     assert result["server_header"] == ""
     assert "disabled" in result["reason"]
+def test_orchestrator_builds_skipped_passive_module_results(tmp_path) -> None:
+    orchestrator = ScanOrchestrator(
+        project_root=tmp_path,
+        settings={},
+        scan_profiles={},
+    )
+
+    robots_result = orchestrator.build_skipped_module_result("robots")
+    sitemap_result = orchestrator.build_skipped_module_result("sitemap")
+
+    assert robots_result["skipped"] is True
+    assert robots_result["entries"]["disallow"] == []
+    assert robots_result["entries"]["sitemap"] == []
+
+    assert sitemap_result["skipped"] is True
+    assert sitemap_result["url_count"] == 0
+    assert sitemap_result["urls"] == []

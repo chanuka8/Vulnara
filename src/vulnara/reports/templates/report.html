@@ -303,6 +303,80 @@
       </div>
     </section>
 
+        <section class="card section">
+      <h2>Passive Reconnaissance</h2>
+
+      {% if passive.robots %}
+        <h3>robots.txt</h3>
+        <div class="kv">
+          <div class="muted">Status</div>
+          <div>
+            {% if passive.robots.skipped %}
+              Skipped
+            {% elif passive.robots.found %}
+              Found
+            {% else %}
+              Not Found
+            {% endif %}
+          </div>
+
+          <div class="muted">URL</div>
+          <div><code>{{ passive.robots.url }}</code></div>
+
+          <div class="muted">HTTP Status</div>
+          <div>{{ passive.robots.status_code }}</div>
+
+          <div class="muted">Disallow Rules</div>
+          <div>{{ passive.robots.entries.disallow | length }}</div>
+
+          <div class="muted">Sitemap References</div>
+          <div>{{ passive.robots.entries.sitemap | length }}</div>
+        </div>
+      {% endif %}
+
+      {% if passive.sitemap %}
+        <h3 style="margin-top: 18px;">sitemap.xml</h3>
+        <div class="kv">
+          <div class="muted">Status</div>
+          <div>
+            {% if passive.sitemap.skipped %}
+              Skipped
+            {% elif passive.sitemap.found %}
+              Found
+            {% else %}
+              Not Found
+            {% endif %}
+          </div>
+
+          <div class="muted">URL</div>
+          <div><code>{{ passive.sitemap.url }}</code></div>
+
+          <div class="muted">HTTP Status</div>
+          <div>{{ passive.sitemap.status_code }}</div>
+
+          <div class="muted">Collected URLs</div>
+          <div>{{ passive.sitemap.url_count }}</div>
+        </div>
+
+        {% if passive.sitemap.urls %}
+          <table style="margin-top: 14px;">
+            <thead>
+              <tr>
+                <th>Sample Sitemap URLs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for url in passive.sitemap.urls[:10] %}
+                <tr>
+                  <td><code>{{ url }}</code></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      {% endif %}
+    </section>
+
     <section class="card section">
       <h2>Findings Summary</h2>
       <table>

@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 from typing import Any
 
 from vulnara.core.evidence import EvidenceStore
@@ -6,8 +6,11 @@ from vulnara.core.exceptions import ScanExecutionError, ScanProfileError
 from vulnara.core.scope import ScopeValidator
 from vulnara.findings.rules import FindingRuleEngine
 from vulnara.models.scan_result import ScanResult
+from vulnara.models.target import Target
 from vulnara.modules.recon.headers import HeaderScanner
 from vulnara.modules.recon.http_probe import HttpProbe
+from vulnara.modules.recon.robots import RobotsTxtScanner
+from vulnara.modules.recon.sitemap import SitemapScanner
 from vulnara.reports.generator import ReportGenerator
 
 
@@ -63,9 +66,18 @@ class ScanOrchestrator:
         else:
             header_result = self.build_skipped_header_result()
 
+        passive_results = self.run_passive_recon_modules(
+            profile=profile,
+            target=target,
+            timeout_seconds=timeout_seconds,
+            follow_redirects=follow_redirects,
+            user_agent=user_agent,
+        )
+
         raw_results = {
             "http_probe": http_result,
             "headers": header_result,
+            "passive": passive_results,
         }
 
         findings = FindingRuleEngine().build_findings(
@@ -94,6 +106,7 @@ class ScanOrchestrator:
             http_result=http_result,
             header_result=header_result,
             findings=findings,
+            passive_results=passive_results,
         )
 
         report_path = ReportGenerator(
@@ -105,6 +118,7 @@ class ScanOrchestrator:
             header_result=header_result,
             findings=findings,
             evidence_path=evidence_path,
+            passive_results=passive_results,
             scan_id=evidence_path.name,
         )
 
@@ -112,10 +126,41 @@ class ScanOrchestrator:
             target=target,
             http_result=http_result,
             header_result=header_result,
+            passive_results=passive_results,
             findings=findings,
             evidence_path=evidence_path,
             report_path=report_path,
         )
+
+    def run_passive_recon_modules(
+        self,
+        profile: dict[str, Any],
+        target: Target,
+        timeout_seconds: int,
+        follow_redirects: bool,
+        user_agent: str,
+    ) -> dict[str, Any]:
+        results: dict[str, Any] = {}
+
+        if self.is_module_enabled(profile, "robots"):
+            results["robots"] = RobotsTxtScanner(
+                timeout_seconds=timeout_seconds,
+                follow_redirects=follow_redirects,
+                user_agent=user_agent,
+            ).run(target)
+        else:
+            results["robots"] = self.build_skipped_module_result("robots")
+
+        if self.is_module_enabled(profile, "sitemap"):
+            results["sitemap"] = SitemapScanner(
+                timeout_seconds=timeout_seconds,
+                follow_redirects=follow_redirects,
+                user_agent=user_agent,
+            ).run(target)
+        else:
+            results["sitemap"] = self.build_skipped_module_result("sitemap")
+
+        return results
 
     def resolve_scan_profile(self, profile_name: str) -> dict[str, Any]:
         profiles = self.scan_profiles.get("profiles", {})
@@ -147,6 +192,42 @@ class ScanOrchestrator:
             "reason": "Security header analysis is disabled by the selected scan profile.",
         }
 
+    def build_skipped_module_result(self, module_name: str) -> dict[str, Any]:
+        base_result: dict[str, Any] = {
+            "enabled": False,
+            "skipped": True,
+            "reason": f"{module_name} module is disabled by the selected scan profile.",
+        }
+
+        if module_name == "robots":
+            return {
+                **base_result,
+                "url": "",
+                "status_code": 0,
+                "found": False,
+                "entries": {
+                    "user_agent": [],
+                    "allow": [],
+                    "disallow": [],
+                    "sitemap": [],
+                },
+                "raw_excerpt": "",
+                "error": "",
+            }
+
+        if module_name == "sitemap":
+            return {
+                **base_result,
+                "url": "",
+                "status_code": 0,
+                "found": False,
+                "url_count": 0,
+                "urls": [],
+                "raw_excerpt": "",
+                "error": "",
+            }
+
+        return base_result
     def _get_section(self, section_name: str) -> dict[str, Any]:
         section = self.settings.get(section_name, {})
 

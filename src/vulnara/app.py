@@ -72,6 +72,39 @@ def print_findings_table(findings: list[Finding]) -> None:
     console.print(table)
 
 
+
+def print_passive_recon_summary(passive_results: dict[str, Any]) -> None:
+    robots = passive_results.get("robots")
+
+    if isinstance(robots, dict):
+        if robots.get("skipped"):
+            logger.info(str(robots.get("reason", "robots module skipped.")))
+        elif robots.get("error"):
+            logger.warning(f"robots.txt check failed: {robots.get('error')}")
+        elif robots.get("found"):
+            entries = robots.get("entries", {})
+            disallow_count = len(entries.get("disallow", [])) if isinstance(entries, dict) else 0
+            sitemap_count = len(entries.get("sitemap", [])) if isinstance(entries, dict) else 0
+
+            logger.success(f"robots.txt found: {robots.get('url', '')}")
+            logger.info(f"robots.txt disallow rules: {disallow_count}")
+            logger.info(f"robots.txt sitemap references: {sitemap_count}")
+        else:
+            logger.info(f"robots.txt not found. Status: {robots.get('status_code', '')}")
+
+    sitemap = passive_results.get("sitemap")
+
+    if isinstance(sitemap, dict):
+        if sitemap.get("skipped"):
+            logger.info(str(sitemap.get("reason", "sitemap module skipped.")))
+        elif sitemap.get("error"):
+            logger.warning(f"sitemap.xml check failed: {sitemap.get('error')}")
+        elif sitemap.get("found"):
+            logger.success(f"sitemap.xml found: {sitemap.get('url', '')}")
+            logger.info(f"sitemap.xml URLs collected: {sitemap.get('url_count', 0)}")
+        else:
+            logger.info(f"sitemap.xml not found. Status: {sitemap.get('status_code', '')}")
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context) -> None:
     """Vulnara Terminal Edition command entry point."""
@@ -195,6 +228,8 @@ def scan(
         if server_header:
             logger.info(f"Server header: [bold white]{server_header}[/bold white]")
 
+    print_passive_recon_summary(result.passive_results)
+
     logger.success(f"Findings generated: {result.finding_count}")
     print_findings_table(result.findings)
 
@@ -207,3 +242,4 @@ def version() -> None:
     """Show the current Vulnara version."""
 
     logger.info("Vulnara Terminal Edition 0.1.0")
+

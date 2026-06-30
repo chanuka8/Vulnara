@@ -23,6 +23,7 @@ class ReportGenerator:
         header_result: dict[str, Any],
         findings: list[Finding],
         evidence_path: Path,
+        passive_results: dict[str, Any] | None = None,
         scan_id: str | None = None,
     ) -> Path:
         resolved_scan_id = scan_id or utc_timestamp()
@@ -46,6 +47,7 @@ class ReportGenerator:
             },
             "http": http_result,
             "headers": header_result,
+            "passive": passive_results or {},
             "findings": [finding.to_dict() for finding in findings],
             "severity_counts": self._count_findings_by_severity(findings),
             "evidence_path": str(evidence_path),

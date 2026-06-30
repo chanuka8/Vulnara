@@ -30,7 +30,12 @@ class ScanOrchestrator:
         authorized_domain: str,
         profile_name: str = "passive_recon",
     ) -> ScanResult:
-        self.resolve_scan_profile(profile_name)
+        profile = self.resolve_scan_profile(profile_name)
+
+        if not self.is_module_enabled(profile, "http_probe"):
+            raise ScanProfileError(
+                f"Scan profile '{profile_name}' cannot run because http_probe is disabled."
+            )
 
         target = ScopeValidator().validate_target(
             target_url=target_url,
@@ -53,7 +58,10 @@ class ScanOrchestrator:
                 f"HTTP probe failed: {http_result.get('error', 'unknown error')}"
             )
 
-        header_result = HeaderScanner().run(http_result)
+        if self.is_module_enabled(profile, "headers"):
+            header_result = HeaderScanner().run(http_result)
+        else:
+            header_result = self.build_skipped_header_result()
 
         raw_results = {
             "http_probe": http_result,
@@ -125,6 +133,19 @@ class ScanOrchestrator:
             )
 
         return profile
+
+    def is_module_enabled(self, profile: dict[str, Any], module_name: str) -> bool:
+        return bool(profile.get(module_name, False))
+
+    def build_skipped_header_result(self) -> dict[str, Any]:
+        return {
+            "checked_headers": [],
+            "missing_headers": [],
+            "present_headers": {},
+            "server_header": "",
+            "skipped": True,
+            "reason": "Security header analysis is disabled by the selected scan profile.",
+        }
 
     def _get_section(self, section_name: str) -> dict[str, Any]:
         section = self.settings.get(section_name, {})

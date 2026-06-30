@@ -182,15 +182,18 @@ def scan(
     if page_title:
         logger.info(f"Page title: [bold white]{page_title}[/bold white]")
 
-    missing_headers = result.header_result.get("missing_headers", [])
-    if isinstance(missing_headers, list) and missing_headers:
-        logger.warning(f"Missing security headers: {', '.join(missing_headers)}")
+    if result.header_result.get("skipped"):
+        logger.info(str(result.header_result.get("reason", "Security header analysis skipped.")))
     else:
-        logger.success("No missing security headers detected by the current rule set.")
+        missing_headers = result.header_result.get("missing_headers", [])
+        if isinstance(missing_headers, list) and missing_headers:
+            logger.warning(f"Missing security headers: {', '.join(missing_headers)}")
+        else:
+            logger.success("No missing security headers detected by the current rule set.")
 
-    server_header = str(result.header_result.get("server_header", "")).strip()
-    if server_header:
-        logger.info(f"Server header: [bold white]{server_header}[/bold white]")
+        server_header = str(result.header_result.get("server_header", "")).strip()
+        if server_header:
+            logger.info(f"Server header: [bold white]{server_header}[/bold white]")
 
     logger.success(f"Findings generated: {result.finding_count}")
     print_findings_table(result.findings)

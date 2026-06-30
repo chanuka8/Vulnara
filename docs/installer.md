@@ -1,4 +1,4 @@
-# Installer Guide
+﻿# Installer Guide
 
 Vulnara ships with cross-platform installer scripts that automate local setup. The installers are interactive, menu-driven, and never perform silent operations on your system.
 
@@ -72,7 +72,7 @@ The installer then:
 **Windows tools** (installed via `winget`):
 
 | Tool | winget ID | Description |
-|------|-----------|-------------|
+| ------ | ----------- | ------------- |
 | nmap | `Insecure.Nmap` | Network port scanner |
 | Wireshark | `WiresharkFoundation.Wireshark` | Network protocol analyzer (includes tshark) |
 | Docker | `Docker.DockerDesktop` | Container runtime |
@@ -80,7 +80,7 @@ The installer then:
 **Linux/Kali tools** (installed via `apt`):
 
 | Tool | apt package | Description |
-|------|-------------|-------------|
+| ------ | ------------- | ------------- |
 | nmap | `nmap` | Network port scanner |
 | tshark | `tshark` | Network protocol analyzer (Wireshark CLI) |
 | Docker | `docker.io` | Container runtime |
@@ -90,7 +90,7 @@ The installer then:
 The installer automatically detects and reports on these prerequisites:
 
 | Prerequisite | Required | Notes |
-|--------------|----------|-------|
+| -------------- | ---------- | ------- |
 | Python 3.11+ | Yes | Must be on PATH |
 | Git | No | Used for `git status` only |
 | winget (Windows) | No | Required only for external tool installation |
@@ -102,10 +102,10 @@ If Python is not found, the installer exits immediately with a helpful message. 
 
 The installer uses consistent message prefixes:
 
-- `[OK]` — Step completed successfully (green)
-- `[INFO]` — Informational message (cyan)
-- `[WARN]` — Non-fatal warning (yellow)
-- `[ERROR]` — Fatal error (red)
+- `[OK]` â€” Step completed successfully (green)
+- `[INFO]` â€” Informational message (cyan)
+- `[WARN]` â€” Non-fatal warning (yellow)
+- `[ERROR]` â€” Fatal error (red)
 
 ## Vulnara Without External Tools
 

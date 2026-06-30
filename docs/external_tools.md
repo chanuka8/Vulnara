@@ -1,4 +1,4 @@
-# External Tools
+﻿# External Tools
 
 Vulnara is a standalone Python tool that does not require any external binaries to function. However, certain external tools can extend your security assessment workflow when used alongside Vulnara.
 
@@ -14,7 +14,7 @@ Vulnara is a standalone Python tool that does not require any external binaries 
 ### nmap
 
 | Property | Details |
-|----------|---------|
+| ---------- | --------- |
 | Description | Network port and service scanner |
 | Website | [https://nmap.org](https://nmap.org) |
 | License | Nmap Public Source License (NPSL) |
@@ -25,7 +25,7 @@ Vulnara is a standalone Python tool that does not require any external binaries 
 ### Wireshark / tshark
 
 | Property | Details |
-|----------|---------|
+| ---------- | --------- |
 | Description | Network protocol analyzer |
 | Website | [https://www.wireshark.org](https://www.wireshark.org) |
 | License | GNU GPL v2 |
@@ -38,7 +38,7 @@ Vulnara is a standalone Python tool that does not require any external binaries 
 ### Docker
 
 | Property | Details |
-|----------|---------|
+| ---------- | --------- |
 | Description | Container runtime |
 | Website | [https://www.docker.com](https://www.docker.com) |
 | License | Apache License 2.0 |
@@ -53,7 +53,7 @@ Vulnara is a standalone Python tool that does not require any external binaries 
 Vulnara's core pipeline is fully functional without any external tools:
 
 | Feature | External tool required? |
-|---------|------------------------|
+| --------- | ------------------------ |
 | HTTP probing | No |
 | Security header analysis | No |
 | robots.txt parsing | No |

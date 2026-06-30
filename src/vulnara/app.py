@@ -16,6 +16,7 @@ from vulnara.findings.rules import FindingRuleEngine
 from vulnara.models.finding import Finding
 from vulnara.modules.recon.headers import HeaderScanner
 from vulnara.modules.recon.http_probe import HttpProbe
+from vulnara.reports.generator import ReportGenerator
 
 app = typer.Typer(
     name="vulnara",
@@ -238,7 +239,11 @@ def scan(
 
     storage_settings: dict[str, Any] = settings.get("storage", {})
     evidence_dir = str(storage_settings.get("evidence_dir", "storage/evidence"))
+    reports_dir = str(storage_settings.get("reports_dir", "output/reports"))
+
     evidence_root = resolve_project_path(project_root, evidence_dir)
+    reports_root = resolve_project_path(project_root, reports_dir)
+    template_path = project_root / "src" / "vulnara" / "reports" / "templates" / "report.html"
 
     logger.info("Saving evidence.")
     evidence_path = EvidenceStore(evidence_root=evidence_root).save_scan_evidence(
@@ -249,7 +254,22 @@ def scan(
     )
 
     logger.success(f"Evidence saved: {evidence_path}")
-    logger.success("Evidence storage completed. Report generation will be connected in Milestone 6.")
+
+    logger.info("Generating HTML report.")
+    report_path = ReportGenerator(
+        reports_root=reports_root,
+        template_path=template_path,
+    ).generate_html_report(
+        target=target_info,
+        http_result=http_result,
+        header_result=header_result,
+        findings=findings,
+        evidence_path=evidence_path,
+        scan_id=evidence_path.name,
+    )
+
+    logger.success(f"Report saved: {report_path}")
+    logger.success("Report generation completed.")
 
 
 @app.command()

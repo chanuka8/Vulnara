@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ project_name }} Report - {{ target.hostname }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel-soft: #162033;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #263244;
+      --accent: #22d3ee;
+      --critical: #ef4444;
+      --high: #f97316;
+      --medium: #f59e0b;
+      --low: #38bdf8;
+      --info: #a78bfa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 36px 22px 52px;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, #101827, #0b1020);
+      border-radius: 18px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 22px;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .card-soft {
+      background: var(--panel-soft);
+    }
+
+    .metric {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: #0f172a;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .severity {
+      display: inline-block;
+      min-width: 82px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .severity-critical {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--critical);
+    }
+
+    .severity-high {
+      background: rgba(249, 115, 22, 0.15);
+      color: var(--high);
+    }
+
+    .severity-medium {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--medium);
+    }
+
+    .severity-low {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--low);
+    }
+
+    .severity-info {
+      background: rgba(167, 139, 250, 0.15);
+      color: var(--info);
+    }
+
+    .section {
+      margin-top: 24px;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 8px 18px;
+      font-size: 14px;
+    }
+
+    code {
+      color: #bae6fd;
+      word-break: break-word;
+    }
+
+    .finding {
+      margin-bottom: 14px;
+    }
+
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .kv {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="brand">{{ project_name }} {{ edition }}</div>
+      <h1>Authorized Security Assessment Report</h1>
+      <p class="muted">
+        Target: <strong>{{ target.hostname }}</strong>
+        <br>
+        Generated: {{ generated_at }}
+      </p>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <div class="label">Total Findings</div>
+        <div class="metric">{{ findings | length }}</div>
+      </div>
+      <div class="card">
+        <div class="label">Medium</div>
+        <div class="metric">{{ severity_counts.medium }}</div>
+      </div>
+      <div class="card">
+        <div class="label">Low</div>
+        <div class="metric">{{ severity_counts.low }}</div>
+      </div>
+      <div class="card">
+        <div class="label">Info</div>
+        <div class="metric">{{ severity_counts.info }}</div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Target Summary</h2>
+      <div class="kv">
+        <div class="muted">Original URL</div>
+        <div><code>{{ target.original_url }}</code></div>
+
+        <div class="muted">Base URL</div>
+        <div><code>{{ target.base_url }}</code></div>
+
+        <div class="muted">Hostname</div>
+        <div>{{ target.hostname }}</div>
+
+        <div class="muted">Authorized Domain</div>
+        <div>{{ target.authorized_domain }}</div>
+
+        <div class="muted">Scan ID</div>
+        <div><code>{{ scan_id }}</code></div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>HTTP Probe</h2>
+      <div class="kv">
+        <div class="muted">Success</div>
+        <div>{{ http.success }}</div>
+
+        <div class="muted">Final URL</div>
+        <div><code>{{ http.url }}</code></div>
+
+        <div class="muted">Status</div>
+        <div>{{ http.status_code }} {{ http.reason_phrase }}</div>
+
+        <div class="muted">Page Title</div>
+        <div>{{ http.title }}</div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Security Header Analysis</h2>
+      <div class="kv">
+        <div class="muted">Server Header</div>
+        <div><code>{{ headers.server_header }}</code></div>
+
+        <div class="muted">Missing Headers</div>
+        <div>
+          {% if headers.missing_headers %}
+            {% for header in headers.missing_headers %}
+              <code>{{ header }}</code>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+          {% else %}
+            No missing headers detected by the current rule set.
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Findings Summary</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Title</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if findings %}
+            {% for finding in findings %}
+              <tr>
+                <td>
+                  <span class="severity severity-{{ finding.severity }}">
+                    {{ finding.severity }}
+                  </span>
+                </td>
+                <td>{{ finding.title }}</td>
+                <td>{{ finding.category }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="3">No findings generated by the current rule set.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Detailed Findings</h2>
+      {% if findings %}
+        {% for finding in findings %}
+          <article class="card card-soft finding">
+            <h3>{{ finding.title }}</h3>
+            <p>
+              <span class="severity severity-{{ finding.severity }}">
+                {{ finding.severity }}
+              </span>
+            </p>
+            <p><strong>Description:</strong> {{ finding.description }}</p>
+            <p><strong>Evidence:</strong> <code>{{ finding.evidence }}</code></p>
+            <p><strong>Recommendation:</strong> {{ finding.recommendation }}</p>
+          </article>
+        {% endfor %}
+      {% else %}
+        <div class="card">No detailed findings available.</div>
+      {% endif %}
+    </section>
+
+    <section class="card section">
+      <h2>Evidence Location</h2>
+      <p><code>{{ evidence_path }}</code></p>
+    </section>
+
+    <p class="footer">
+      This report was generated by Vulnara for authorized security assessment workflows.
+    </p>
+  </main>
+</body>
+</html>

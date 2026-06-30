@@ -105,6 +105,32 @@ def print_passive_recon_summary(passive_results: dict[str, Any]) -> None:
         else:
             logger.info(f"sitemap.xml not found. Status: {sitemap.get('status_code', '')}")
 
+def print_cookie_security_summary(cookie_result: dict[str, Any]) -> None:
+    if not isinstance(cookie_result, dict):
+        return
+
+    if cookie_result.get("skipped"):
+        logger.info(str(cookie_result.get("reason", "cookies module skipped.")))
+        return
+
+    if cookie_result.get("error"):
+        logger.warning(f"Cookie security check failed: {cookie_result.get('error')}")
+        return
+
+    cookie_count = int(cookie_result.get("cookie_count", 0))
+    weak_cookie_count = len(cookie_result.get("cookies_with_missing_attributes", []))
+
+    if cookie_count == 0:
+        logger.info("No Set-Cookie headers detected.")
+        return
+
+    logger.info(f"Cookies detected: {cookie_count}")
+
+    if weak_cookie_count:
+        logger.warning(f"Cookies with missing security attributes: {weak_cookie_count}")
+    else:
+        logger.success("Cookie security attributes look complete for detected cookies.")
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context) -> None:
     """Vulnara Terminal Edition command entry point."""
@@ -229,6 +255,7 @@ def scan(
             logger.info(f"Server header: [bold white]{server_header}[/bold white]")
 
     print_passive_recon_summary(result.passive_results)
+    print_cookie_security_summary(result.cookie_result)
 
     logger.success(f"Findings generated: {result.finding_count}")
     print_findings_table(result.findings)
@@ -242,4 +269,6 @@ def version() -> None:
     """Show the current Vulnara version."""
 
     logger.info("Vulnara Terminal Edition 0.1.0")
+
+
 

@@ -1,4 +1,5 @@
-from vulnara.findings.rules import FindingRuleEngine
+﻿from vulnara.findings.rules import FindingRuleEngine
+from vulnara.findings.severity import Severity
 from vulnara.models.target import Target
 
 
@@ -88,3 +89,37 @@ def test_multiple_findings_are_sorted_by_severity() -> None:
     assert findings[0].severity == "medium"
     assert findings[1].severity == "low"
     assert findings[2].severity == "info"
+
+def test_rule_engine_generates_cookie_missing_attribute_finding() -> None:
+    target = Target(
+        original_url="https://example.com",
+        scheme="https",
+        hostname="example.com",
+        authorized_domain="example.com",
+    )
+    engine = FindingRuleEngine()
+
+    findings = engine.build_findings(
+        target=target,
+        raw_results={
+            "headers": {
+                "missing_headers": [],
+                "server_header": "",
+            },
+            "cookies": {
+                "cookies_with_missing_attributes": [
+                    {
+                        "name": "sessionid",
+                        "missing_attributes": ["Secure", "HttpOnly", "SameSite"],
+                    }
+                ]
+            },
+        },
+    )
+
+    assert len(findings) == 1
+    assert findings[0].title == "Cookie missing security attributes: sessionid"
+    assert findings[0].severity == Severity.LOW.value
+    assert findings[0].category == "web_configuration"
+
+

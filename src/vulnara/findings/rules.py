@@ -1,4 +1,4 @@
-from typing import Any
+﻿from typing import Any
 
 from vulnara.findings.recommendations import get_header_recommendation
 from vulnara.findings.severity import Severity
@@ -13,6 +13,7 @@ class FindingRuleEngine:
         findings: list[Finding] = []
 
         findings.extend(self._build_header_findings(raw_results.get("headers", {})))
+        findings.extend(self._build_cookie_findings(raw_results.get("cookies", {})))
         findings.extend(self._build_server_disclosure_findings(raw_results.get("headers", {})))
         findings.extend(self._build_transport_findings(target))
 
@@ -34,12 +35,54 @@ class FindingRuleEngine:
                     title=f"Missing security header: {header}",
                     severity=self._header_severity(header).value,
                     description=(
-                        f"The HTTP response does not include the '{header}' security header. "
+                        f"The HTTP response does not include the {header} security header. "
                         "Missing browser security controls can increase exposure to client-side "
                         "and transport-related risks depending on the application context."
                     ),
                     recommendation=get_header_recommendation(header),
-                    evidence=f"Header '{header}' was not present in the HTTP response.",
+                    evidence=f"Header {header} was not present in the HTTP response.",
+                    category="web_configuration",
+                )
+            )
+
+        return findings
+
+    def _build_cookie_findings(self, cookie_result: dict[str, Any]) -> list[Finding]:
+        findings: list[Finding] = []
+        weak_cookies = cookie_result.get("cookies_with_missing_attributes", [])
+
+        if not isinstance(weak_cookies, list):
+            return findings
+
+        for cookie in weak_cookies:
+            if not isinstance(cookie, dict):
+                continue
+
+            cookie_name = str(cookie.get("name", "unknown")).strip() or "unknown"
+            missing_attributes = cookie.get("missing_attributes", [])
+
+            if not isinstance(missing_attributes, list) or not missing_attributes:
+                continue
+
+            normalized_missing = [str(attribute) for attribute in missing_attributes]
+            missing_text = ", ".join(normalized_missing)
+
+            findings.append(
+                Finding(
+                    title=f"Cookie missing security attributes: {cookie_name}",
+                    severity=Severity.LOW.value,
+                    description=(
+                        "The HTTP response sets a cookie that is missing one or more common "
+                        "security attributes. Missing cookie attributes can increase exposure "
+                        "to client-side access, insecure transport, or cross-site request risks "
+                        "depending on application context."
+                    ),
+                    recommendation=(
+                        "Set Secure, HttpOnly, and SameSite attributes on sensitive cookies where "
+                        "appropriate. Use Secure for HTTPS-only transport, HttpOnly to reduce "
+                        "client-side script access, and SameSite to help control cross-site usage."
+                    ),
+                    evidence=f"Cookie {cookie_name} missing attributes: {missing_text}",
                     category="web_configuration",
                 )
             )

@@ -1,10 +1,10 @@
 ﻿from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-
 from vulnara.models.finding import Finding
 from vulnara.models.target import Target
+from vulnara.reports.html import HtmlReportRenderer
+from vulnara.reports.json_export import JsonReportExporter
 from vulnara.utils.file_utils import ensure_directory, safe_path_name
 from vulnara.utils.time_utils import utc_iso_timestamp, utc_timestamp
 
@@ -32,7 +32,7 @@ class ReportGenerator:
             self.reports_root / safe_path_name(target.hostname) / resolved_scan_id
         )
 
-        template = self._load_template()
+        renderer = HtmlReportRenderer(self.template_path)
         report_path = report_directory / "report.html"
 
         payload = {
@@ -56,16 +56,18 @@ class ReportGenerator:
             "scan_id": resolved_scan_id,
         }
 
-        report_path.write_text(template.render(**payload), encoding="utf-8")
-        return report_path
-
-    def _load_template(self):
-        environment = Environment(
-            loader=FileSystemLoader(str(self.template_path.parent)),
-            autoescape=select_autoescape(enabled_extensions=("html", "xml")),
+        report_path.write_text(
+            renderer.render(payload),
+            encoding="utf-8",
         )
 
-        return environment.get_template(self.template_path.name)
+        json_path = report_path.with_name("summary.json")
+        json_path.write_text(
+            JsonReportExporter().render(payload),
+            encoding="utf-8",
+        )
+
+        return report_path
 
     def _count_findings_by_severity(self, findings: list[Finding]) -> dict[str, int]:
         counts = {
@@ -77,7 +79,7 @@ class ReportGenerator:
         }
 
         for finding in findings:
-            severity = finding.severity.lower()
+            severity = str(finding.severity).lower()
             counts[severity] = counts.get(severity, 0) + 1
 
         return counts

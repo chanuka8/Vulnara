@@ -194,6 +194,10 @@
       color: var(--muted);
       font-size: 13px;
     }
+    
+    .ai-box {
+      border-left: 4px solid var(--accent);
+    }
 
     @media (max-width: 900px) {
       .grid {
@@ -246,6 +250,15 @@
         <div class="metric">{{ severity_counts.info }}</div>
       </div>
     </section>
+
+    {% if ai_summary %}
+    <section class="card card-soft section ai-box">
+      <h2 style="color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        ✦ AI Executive Summary
+      </h2>
+      <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.6;">{{ ai_summary | safe }}</pre>
+    </section>
+    {% endif %}
 
     <section class="card section">
       <h2>Target Summary</h2>

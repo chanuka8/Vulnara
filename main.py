@@ -1,12 +1,15 @@
-﻿from pathlib import Path
-import sys
+﻿import sys
+from pathlib import Path
+from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-SRC_DIR = PROJECT_ROOT / "src"
+# 1. Load environment variables from the .env file
+load_dotenv()
 
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
+# 2. Add the 'src' directory to the Python path so modules resolve correctly
+src_path = Path(__file__).parent / "src"
+sys.path.insert(0, str(src_path))
 
+# 3. Import and run the CLI app
 from vulnara.app import app
 
 if __name__ == "__main__":

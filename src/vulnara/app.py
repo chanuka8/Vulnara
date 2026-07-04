@@ -72,7 +72,6 @@ def print_findings_table(findings: list[Finding]) -> None:
     console.print(table)
 
 
-
 def print_passive_recon_summary(passive_results: dict[str, Any]) -> None:
     robots = passive_results.get("robots")
 
@@ -105,6 +104,7 @@ def print_passive_recon_summary(passive_results: dict[str, Any]) -> None:
         else:
             logger.info(f"sitemap.xml not found. Status: {sitemap.get('status_code', '')}")
 
+
 def print_cookie_security_summary(cookie_result: dict[str, Any]) -> None:
     if not isinstance(cookie_result, dict):
         return
@@ -130,6 +130,7 @@ def print_cookie_security_summary(cookie_result: dict[str, Any]) -> None:
         logger.warning(f"Cookies with missing security attributes: {weak_cookie_count}")
     else:
         logger.success("Cookie security attributes look complete for detected cookies.")
+
 
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context) -> None:
@@ -220,6 +221,7 @@ def scan(
             target_url=target,
             authorized_domain=authorized_domain,
             profile_name=profile,
+            ai_enabled=ai_report,
         )
     except VulnaraError as error:
         logger.error(str(error))
@@ -269,6 +271,3 @@ def version() -> None:
     """Show the current Vulnara version."""
 
     logger.info("Vulnara Terminal Edition 0.1.0")
-
-
-

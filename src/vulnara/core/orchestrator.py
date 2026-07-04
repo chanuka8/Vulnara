@@ -4,6 +4,7 @@ from typing import Any
 from vulnara.core.evidence import EvidenceStore
 from vulnara.core.exceptions import ScanExecutionError, ScanProfileError
 from vulnara.core.scope import ScopeValidator
+from vulnara.core.logger import ConsoleLogger
 from vulnara.findings.rules import FindingRuleEngine
 from vulnara.models.scan_result import ScanResult
 from vulnara.models.target import Target
@@ -14,6 +15,9 @@ from vulnara.modules.recon.sitemap import SitemapScanner
 from vulnara.modules.vuln_scan.cookie_scan import CookieSecurityScanner
 from vulnara.reports.generator import ReportGenerator
 
+from vulnara.ai_engine.provider import OpenRouterProvider, AIProviderError
+from vulnara.ai_engine.analyzer import AIAnalyzer
+
 
 class ScanOrchestrator:
     """Coordinates the full authorized assessment workflow."""
@@ -22,8 +26,15 @@ class ScanOrchestrator:
         self.project_root = project_root
         self.settings = settings
         self.scan_profiles = scan_profiles
+        self.logger = ConsoleLogger()
 
-    def run(self, target_url: str, authorized_domain: str, profile_name: str = "passive_recon") -> ScanResult:
+    def run(
+        self, 
+        target_url: str, 
+        authorized_domain: str, 
+        profile_name: str = "passive_recon",
+        ai_enabled: bool = False
+    ) -> ScanResult:
         profile = self.resolve_scan_profile(profile_name)
 
         if not self.is_module_enabled(profile, "http_probe"):
@@ -84,6 +95,21 @@ class ScanOrchestrator:
             cookie_result=cookie_result,
         )
 
+        ai_summary = None
+        if ai_enabled:
+            self.logger.info("Generating AI Executive Summary using OpenRouter...")
+            try:
+                provider = OpenRouterProvider()
+                analyzer = AIAnalyzer(provider)
+                ai_summary = analyzer.generate_executive_summary(findings)
+                self.logger.success("AI Executive Summary generated successfully.")
+            except AIProviderError as e:
+                self.logger.error(f"AI Engine failed: {str(e)}")
+                ai_summary = "AI analysis failed due to an API error."
+            except Exception as e:
+                self.logger.error(f"Unexpected error during AI analysis: {str(e)}")
+                ai_summary = "AI analysis failed due to an unexpected system error."
+
         report_path = ReportGenerator(reports_root=reports_root, template_path=template_path).generate_html_report(
             target=target,
             http_result=http_result,
@@ -93,6 +119,7 @@ class ScanOrchestrator:
             passive_results=passive_results,
             cookie_result=cookie_result,
             scan_id=evidence_path.name,
+            ai_summary=ai_summary,
         )
 
         return ScanResult(

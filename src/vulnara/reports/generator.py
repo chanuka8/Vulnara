@@ -26,7 +26,9 @@ class ReportGenerator:
         passive_results: dict[str, Any] | None = None,
         cookie_result: dict[str, Any] | None = None,
         scan_id: str | None = None,
+        ai_summary: str | None = None,
     ) -> Path:
+        """Renders findings and AI summaries into the HTML template."""
         resolved_scan_id = scan_id or utc_timestamp()
         report_directory = ensure_directory(
             self.reports_root / safe_path_name(target.hostname) / resolved_scan_id
@@ -54,6 +56,7 @@ class ReportGenerator:
             "severity_counts": self._count_findings_by_severity(findings),
             "evidence_path": str(evidence_path),
             "scan_id": resolved_scan_id,
+            "ai_summary": ai_summary,
         }
 
         report_path.write_text(
@@ -70,6 +73,7 @@ class ReportGenerator:
         return report_path
 
     def _count_findings_by_severity(self, findings: list[Finding]) -> dict[str, int]:
+        """Calculates the distribution of finding severities for dashboard charting."""
         counts = {
             "critical": 0,
             "high": 0,

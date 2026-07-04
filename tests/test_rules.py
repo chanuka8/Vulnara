@@ -118,7 +118,7 @@ def test_rule_engine_generates_cookie_missing_attribute_finding() -> None:
     )
 
     assert len(findings) == 1
-    assert findings[0].title == "Cookie missing security attributes: sessionid"
+    assert findings[0].title == "Cookie missing attributes: sessionid"
     assert findings[0].severity == Severity.LOW.value
     assert findings[0].category == "web_configuration"
 

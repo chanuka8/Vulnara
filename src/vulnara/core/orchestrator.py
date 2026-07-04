@@ -1,5 +1,5 @@
 ﻿from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 from vulnara.core.evidence import EvidenceStore
 from vulnara.core.exceptions import ScanExecutionError, ScanProfileError
@@ -13,6 +13,7 @@ from vulnara.modules.recon.http_probe import HttpProbe
 from vulnara.modules.recon.robots import RobotsTxtScanner
 from vulnara.modules.recon.sitemap import SitemapScanner
 from vulnara.modules.vuln_scan.cookie_scan import CookieSecurityScanner
+from vulnara.modules.network.nmap_scanner import NmapScanner
 from vulnara.reports.generator import ReportGenerator
 
 from vulnara.ai_engine.provider import OpenRouterProvider, AIProviderError
@@ -57,11 +58,13 @@ class ScanOrchestrator:
             error_message = str(http_result.get("error", "unknown error"))
             raise ScanExecutionError(f"HTTP probe failed: {error_message}")
 
-        if self.is_module_enabled(profile, "headers"):
-            header_result = HeaderScanner().run(http_result)
-        else:
-            header_result = self.build_skipped_header_result()
+        # Security Headers
+        header_result = HeaderScanner().run(http_result) if self.is_module_enabled(profile, "headers") else self.build_skipped_header_result()
 
+        # Network Scan (Nmap)
+        network_result = self.run_network_module(profile, target)
+
+        # Passive Recon
         passive_results = self.run_passive_recon_modules(
             profile=profile,
             target=target,
@@ -75,6 +78,7 @@ class ScanOrchestrator:
         raw_results = {
             "http_probe": http_result,
             "headers": header_result,
+            "network": network_result,
             "passive": passive_results,
             "cookies": cookie_result,
         }
@@ -133,6 +137,11 @@ class ScanOrchestrator:
             report_path=report_path,
         )
 
+    def run_network_module(self, profile: dict[str, Any], target: Target) -> Dict[str, Any]:
+        if self.is_module_enabled(profile, "network_scan"):
+            return NmapScanner().run(target)
+        return self.build_skipped_module_result("network_scan")
+
     def run_passive_recon_modules(
         self,
         profile: dict[str, Any],
@@ -163,7 +172,7 @@ class ScanOrchestrator:
             "enabled": False,
             "checked": False,
             "skipped": True,
-            "reason": "cookies module is disabled by the selected scan profile.",
+            "reason": "cookies module is disabled.",
             "cookie_count": 0,
             "raw_set_cookie_count": 0,
             "cookies": [],
@@ -195,53 +204,30 @@ class ScanOrchestrator:
             "present_headers": {},
             "server_header": "",
             "skipped": True,
-            "reason": "Security header analysis is disabled by the selected scan profile.",
+            "reason": "Security header analysis disabled.",
         }
 
     def build_skipped_module_result(self, module_name: str) -> dict[str, Any]:
         base_result: dict[str, Any] = {
             "enabled": False,
             "skipped": True,
-            "reason": f"{module_name} module is disabled by the selected scan profile.",
+            "reason": f"{module_name} module disabled.",
         }
 
+        # Handling specific schemas for module results
         if module_name == "robots":
-            return {
-                **base_result,
-                "url": "",
-                "status_code": 0,
-                "found": False,
-                "entries": {"user_agent": [], "allow": [], "disallow": [], "sitemap": []},
-                "raw_excerpt": "",
-                "error": "",
-            }
-
+            return {**base_result, "url": "", "status_code": 0, "found": False, "entries": {"user_agent": [], "allow": [], "disallow": [], "sitemap": []}, "error": ""}
         if module_name == "sitemap":
-            return {
-                **base_result,
-                "url": "",
-                "status_code": 0,
-                "found": False,
-                "url_count": 0,
-                "urls": [],
-                "raw_excerpt": "",
-                "error": "",
-            }
+            return {**base_result, "url": "", "status_code": 0, "found": False, "url_count": 0, "urls": [], "error": ""}
+        if module_name == "network_scan":
+            return {**base_result, "output": "", "error": ""}
 
         return base_result
 
     def _get_section(self, section_name: str) -> dict[str, Any]:
         section = self.settings.get(section_name, {})
-
-        if not isinstance(section, dict):
-            return {}
-
-        return section
+        return section if isinstance(section, dict) else {}
 
     def _resolve_project_path(self, path_value: str) -> Path:
         path = Path(path_value)
-
-        if path.is_absolute():
-            return path
-
-        return self.project_root / path
+        return path if path.is_absolute() else self.project_root / path

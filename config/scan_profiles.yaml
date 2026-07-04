@@ -5,6 +5,7 @@
     robots: true
     sitemap: true
     cookies: true
+    network_scan: true
 
   headers_only:
     http_probe: true

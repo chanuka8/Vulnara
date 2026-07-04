@@ -58,13 +58,10 @@ class ScanOrchestrator:
             error_message = str(http_result.get("error", "unknown error"))
             raise ScanExecutionError(f"HTTP probe failed: {error_message}")
 
-        # Security Headers
         header_result = HeaderScanner().run(http_result) if self.is_module_enabled(profile, "headers") else self.build_skipped_header_result()
-
-        # Network Scan (Nmap)
+        
         network_result = self.run_network_module(profile, target)
 
-        # Passive Recon
         passive_results = self.run_passive_recon_modules(
             profile=profile,
             target=target,
@@ -139,6 +136,7 @@ class ScanOrchestrator:
 
     def run_network_module(self, profile: dict[str, Any], target: Target) -> Dict[str, Any]:
         if self.is_module_enabled(profile, "network_scan"):
+            self.logger.info("Running Nmap scan...")
             return NmapScanner().run(target)
         return self.build_skipped_module_result("network_scan")
 
@@ -182,16 +180,12 @@ class ScanOrchestrator:
 
     def resolve_scan_profile(self, profile_name: str) -> dict[str, Any]:
         profiles = self.scan_profiles.get("profiles", {})
-
         if not isinstance(profiles, dict):
             raise ScanProfileError("Invalid scan profiles configuration.")
-
         profile = profiles.get(profile_name)
-
         if not isinstance(profile, dict):
-            available_profiles = ", ".join(sorted(profiles.keys())) or "none"
-            raise ScanProfileError(f"Scan profile {profile_name} was not found. Available profiles: {available_profiles}")
-
+            available = ", ".join(sorted(profiles.keys())) or "none"
+            raise ScanProfileError(f"Scan profile {profile_name} not found. Available: {available}")
         return profile
 
     def is_module_enabled(self, profile: dict[str, Any], module_name: str) -> bool:
@@ -213,15 +207,12 @@ class ScanOrchestrator:
             "skipped": True,
             "reason": f"{module_name} module disabled.",
         }
-
-        # Handling specific schemas for module results
         if module_name == "robots":
             return {**base_result, "url": "", "status_code": 0, "found": False, "entries": {"user_agent": [], "allow": [], "disallow": [], "sitemap": []}, "error": ""}
         if module_name == "sitemap":
             return {**base_result, "url": "", "status_code": 0, "found": False, "url_count": 0, "urls": [], "error": ""}
         if module_name == "network_scan":
             return {**base_result, "output": "", "error": ""}
-
         return base_result
 
     def _get_section(self, section_name: str) -> dict[str, Any]:

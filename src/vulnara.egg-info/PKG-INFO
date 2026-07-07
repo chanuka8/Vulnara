@@ -1,0 +1,102 @@
+Metadata-Version: 2.4
+Name: vulnara
+Version: 0.1.0
+Summary: Local-first security assessment automation for authorized testing.
+Author: Chanuka Sandun
+Classifier: Development Status :: 3 - Alpha
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: System Administrators
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
+Classifier: Topic :: Security
+Classifier: Topic :: System :: Networking
+Classifier: Typing :: Typed
+Requires-Python: <3.15,>=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: typer>=0.12.0
+Requires-Dist: rich>=13.7.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: beautifulsoup4>=4.12.0
+Requires-Dist: jinja2>=3.1.0
+Requires-Dist: pyyaml>=6.0.0
+Requires-Dist: python-dotenv>=1.0.0
+Dynamic: license-file
+
+# Vulnara
+
+Vulnara is a local-first terminal security assessment automation tool for authorized testing environments.
+
+It automates scope validation, reconnaissance, safe vulnerability checks, evidence collection, finding classification, and professional report generation.
+
+## Current Version
+
+0.1.0
+
+## Project Type
+
+Vulnara is a Pentest Workflow Automation Tool and Authorized Security Assessment Automation Tool.
+
+It is not an exploit automation framework.
+
+## Safety Policy
+
+Vulnara does not perform:
+
+- Automatic exploitation
+- Brute force attacks
+- Password spraying
+- Payload generation
+- Stealth scanning
+- Bypass techniques
+- Unauthorized scanning
+
+## Installation
+
+### Quick Start (Recommended)
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/chanuka8/Vulnara.git
+cd Vulnara
+.\scripts\install.ps1
+```
+
+**Kali Linux / Debian / Ubuntu:**
+
+```bash
+git clone https://github.com/chanuka8/Vulnara.git
+cd Vulnara
+chmod +x scripts/install.sh
+./scripts/install.sh
+```
+
+The installer presents three options: Basic, Recommended, and Advanced. See [docs/installer.md](docs/installer.md) for details.
+
+### Manual Installation
+
+```bash
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# Linux/macOS
+source venv/bin/activate
+
+pip install -r requirements.txt
+python main.py doctor
+```
+
+## Python Support
+
+Vulnara is designed to support Python 3.11, 3.12, 3.13, and 3.14.
+
+## License
+
+License will be finalized before the first public release.

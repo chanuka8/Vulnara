@@ -1,0 +1,2 @@
+[console_scripts]
+vulnara = vulnara.app:app

@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 from typing import Any, Dict
 
 from vulnara.core.evidence import EvidenceStore
@@ -102,7 +102,7 @@ class ScanOrchestrator:
             try:
                 provider = OpenRouterProvider()
                 analyzer = AIAnalyzer(provider)
-                ai_summary = analyzer.generate_executive_summary(findings)
+                ai_summary = analyzer.generate_executive_summary(findings, raw_results)
                 self.logger.success("AI Executive Summary generated successfully.")
             except AIProviderError as e:
                 self.logger.error(f"AI Engine failed: {str(e)}")

@@ -1,29 +1,29 @@
 import subprocess
-import shutil
-from typing import Any, Dict
-from vulnara.core.base_module import BaseModule
+import tempfile
+from typing import List, Dict, Any
+from vulnara.modules.network.base_scanner import NetworkScanner
 
-class NmapScanner(BaseModule):
-    """Wrapper for Nmap to perform network recon."""
-
-    def __init__(self, arguments: str = "-sV -T4") -> None:
-        self.arguments = arguments
-        self.binary = shutil.which("nmap")
-
-    def run(self, target: Any) -> Dict[str, Any]:
-        if not self.binary:
-            return self.get_skipped_result("nmap binary not found in system path.")
-
-        try:
-            # Running Nmap as a sub-process
-            command = [self.binary] + self.arguments.split() + [target.hostname]
-            result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+class NmapScanner(NetworkScanner):
+    def scan(self, target: str) -> List[Dict[str, Any]]:
+        results = []
+        
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+            tmp_path = tmp.name
             
-            return {
-                "success": result.returncode == 0,
-                "output": result.stdout,
-                "error": result.stderr,
-                "command": " ".join(command)
-            }
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        try:
+            subprocess.run(
+                ["nmap", "-sV", "-oX", tmp_path, target], 
+                check=True, capture_output=True
+            )
+            
+            results.append({
+                "target": target,
+                "status": "completed",
+                "tool": "nmap",
+                "output_path": tmp_path
+            })
+            
+        except subprocess.CalledProcessError:
+            pass
+            
+        return results
